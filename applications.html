@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Руководство по регистрации OAuth/OIDC-приложений в SSO."
+    />
+    <title>Управление приложениями — SSO Docs</title>
+    <link rel="stylesheet" href="./assets/docs.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="./index.html"
+        ><span class="brand-icon">S</span
+        ><span>SSO <span class="brand-muted">Developer Docs</span></span></a
+      >
+      <nav class="top-links">
+        <a href="./index.html">← Все разделы</a
+        ><a
+          href="https://swagger.io/product/?utm_source=google-paid&utm_medium=ppcg&utm_campaign=G+-+API+Hub+-+EMEA+-+NB&utm_term=generate%20api%20docs&utm_content=p&gclsrc=aw.ds&gad_source=1&gad_campaignid=22683279347&gbraid=0AAAAAD_lD12zWkUJng0uIeeUPPzYpcs_p&gclid=CjwKCAjw56zWBhB0EiwAdPOQOXwqYuTYtVaJOTrjmv5AyWUm6wHP_3hbpvoW6pRuafMUylr0GKpf4hoCHOYQAvD_BwE"
+          class="nav-button"
+          >Swagger API ↗</a
+        >
+      </nav>
+    </header>
+    <main>
+      <section class="hero">
+        <div class="eyebrow">
+          <span class="status-dot"></span> APPLICATION MANAGEMENT
+        </div>
+        <h1>Управление <span>приложениями</span></h1>
+        <p class="hero-description">
+          Регистрация OAuth 2.0 / OpenID Connect клиентов через административную
+          панель SSO.
+        </p>
+        <div class="hero-actions">
+          <a class="button button-secondary" href="./index.html"
+            >К документации</a
+          >
+        </div>
+      </section>
+      <!-- <section class="section" id="quick-links">
+        <div class="section-heading">
+          <div>
+            <p class="section-label">QUICK ACCESS</p>
+            <h2>Быстрые ссылки проекта</h2>
+          </div>
+        </div>
+        <div class="resource-list">
+          <a class="resource" href="/Admin/Applications"
+            ><div>
+              <strong>Админ-панель</strong>
+              <p>Управление приложениями SSO.</p>
+            </div>
+            <span>↗</span></a
+          >
+          <a class="resource" href="/oauth-test.html"
+            ><div>
+              <strong>Локальная тестовая страница</strong>
+              <p>Проверка авторизации и токенов.</p>
+            </div>
+            <span>↗</span></a
+          >
+          <a class="resource" href="/Account/Login"
+            ><div>
+              <strong>Авторизация / вход</strong>
+              <p>Страница входа в SSO.</p>
+            </div>
+            <span>↗</span></a
+          >
+          <a class="resource" href="/Account/Logout"
+            ><div>
+              <strong>Логаут / выход</strong>
+              <p>Маршрут завершения сессии. Может требовать POST.</p>
+            </div>
+            <span>↗</span></a
+          >
+          <a class="resource" href="/"
+            ><div>
+              <strong>Главная локального проекта</strong>
+              <p>Корневой адрес SSO-сервиса.</p>
+            </div>
+            <span>↗</span></a
+          >
+        </div>
+      </section> -->
+      <section class="section">
+        <div class="section-heading">
+          <div>
+            <p class="section-label">STEP 01</p>
+            <h2>Подготовьте параметры</h2>
+          </div>
+        </div>
+        <div class="info-panel">
+          <div>
+            <h3>Перед регистрацией</h3>
+            <p>
+              Определите отображаемое название, уникальный Client ID и точный
+              Redirect URI — адрес callback, на который SSO вернёт браузер после
+              авторизации.
+            </p>
+          </div>
+          <div class="info-aside">
+            <span class="aside-label">Безопасность</span>
+            <p>
+              Redirect URI должен принадлежать вашему приложению. Не используйте
+              адреса, которыми вы не управляете.
+            </p>
+          </div>
+        </div>
+      </section>
+      <section class="section">
+        <div class="section-heading">
+          <div>
+            <p class="section-label">STEP 02</p>
+            <h2>Создайте клиента</h2>
+          </div>
+        </div>
+        <div class="cards">
+          <div class="card">
+            <div class="card-number">01</div>
+            <h3>Откройте панель</h3>
+            <p>
+              Войдите под аккаунтом с ролью Admin и откройте
+              <code>/Admin/Applications</code>.
+            </p>
+          </div>
+          <div class="card">
+            <div class="card-number">02</div>
+            <h3>Заполните поля</h3>
+            <p>
+              Укажите название, уникальный Client ID, тип клиента и Redirect
+              URI.
+            </p>
+          </div>
+          <div class="card">
+            <div class="card-number">03</div>
+            <h3>Проверьте настройки</h3>
+            <p>
+              Client ID и Redirect URI в приложении должны совпадать с
+              зарегистрированными значениями.
+            </p>
+          </div>
+        </div>
+      </section>
+      <section class="section">
+        <div class="section-heading">
+          <div>
+            <p class="section-label">CLIENT TYPES</p>
+            <h2>Public и Confidential</h2>
+          </div>
+        </div>
+        <div class="resource-list">
+          <div class="resource">
+            <div>
+              <strong>Public</strong>
+              <p>
+                Для браузерных клиентов, которые не могут безопасно хранить
+                секрет. Используйте Authorization Code Flow с PKCE.
+              </p>
+            </div>
+            <span>01</span>
+          </div>
+          <div class="resource">
+            <div>
+              <strong>Confidential</strong>
+              <p>
+                Для серверных приложений, способных безопасно хранить клиентские
+                секреты. Не помещайте секрет в публичный frontend-код.
+              </p>
+            </div>
+            <span>02</span>
+          </div>
+        </div>
+      </section>
+      <section class="section">
+        <div class="info-panel">
+          <div>
+            <p class="section-label">SCOPES & CALLBACK</p>
+            <h2>Scopes и Redirect URI</h2>
+            <p>
+              <code>openid</code> нужен для OpenID Connect. Дополнительные
+              scopes, например <code>profile</code> и <code>email</code>,
+              запрашивайте только если они нужны приложению и разрешены
+              настройками клиента.
+            </p>
+          </div>
+          <div class="info-aside">
+            <span class="aside-label">Проверка</span>
+            <p>Сверьте схему, домен, порт, путь и завершающий слеш URI.</p>
+          </div>
+        </div>
+      </section>
+      <section class="section">
+        <div class="section-heading">
+          <div>
+            <p class="section-label">NEXT STEP</p>
+            <h2>После регистрации</h2>
+          </div>
+        </div>
+        <div class="cards">
+          <a class="card" href="./integration.html#authorization"
+            ><div class="card-number">01</div>
+            <h3>Настроить вход</h3>
+            <p>
+              Используйте Authorization Code Flow с PKCE и параметры OIDC
+              Discovery.
+            </p>
+            <span class="card-link">Инструкция по интеграции →</span></a
+          >
+          <!-- <a
+            class="card"
+            href="/.well-known/openid-configuration"
+            target="_blank"
+            rel="noreferrer"
+            ><div class="card-number">02</div>
+            <h3>Открыть Discovery</h3>
+            <p>Посмотрите endpoints и параметры конфигурации сервера.</p>
+            <span class="card-link">Открыть конфигурацию ↗</span></a
+          > -->
+        </div>
+      </section>
+      <footer>
+        <span>SSO Developer Docs</span
+        ><span><a href="./index.html">На главную</a></span>
+      </footer>
+    </main>
+  </body>
+</html>

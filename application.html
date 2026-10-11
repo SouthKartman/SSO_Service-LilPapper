@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Управление приложениями — SSO Docs</title>
+    <link rel="stylesheet" href="./assets/docs.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="./index.html">
+        <span class="brand-icon">S</span>
+        <span>SSO <span class="brand-muted">Developer Docs</span></span>
+      </a>
+      <nav class="top-links">
+        <a href="/.well-known/openid-configuration">OIDC Discovery ↗</a>
+        <a
+          href="https://swagger.io/product/?utm_source=google-paid&utm_medium=ppcg&utm_campaign=G+-+API+Hub+-+EMEA+-+NB&utm_term=generate%20api%20docs&utm_content=p&gclsrc=aw.ds&gad_source=1&gad_campaignid=22683279347&gbraid=0AAAAAD_lD12zWkUJng0uIeeUPPzYpcs_p&gclid=CjwKCAjw56zWBhB0EiwAdPOQOXwqYuTYtVaJOTrjmv5AyWUm6wHP_3hbpvoW6pRuafMUylr0GKpf4hoCHOYQAvD_BwE"
+          class="nav-button"
+          >Swagger API ↗</a
+        >
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <p class="section-label">ADMINISTRATION</p>
+        <h1>Управление <span>приложениями</span></h1>
+        <p class="hero-description">
+          Руководство по регистрации сторонних приложений, настройке доступа к
+          SSO и проверке параметров клиента.
+        </p>
+        <div class="hero-actions">
+          <a class="button button-primary" href="/Admin/Applications">
+            Открыть панель приложений →
+          </a>
+          <a class="button button-secondary" href="./integration.html">
+            Руководство по интеграции
+          </a>
+        </div>
+      </section>
+
+      <section class="section">
+        <p class="section-label">01 / ACCESS</p>
+        <h2>Доступ к панели</h2>
+        <p>
+          Управление клиентами доступно через административную панель SSO. Для
+          работы с ней необходима учётная запись с соответствующей
+          административной ролью.
+        </p>
+        <p>
+          Страница управления приложениями:
+          <code>/Admin/Applications</code>.
+        </p>
+      </section>
+
+      <section class="section">
+        <p class="section-label">02 / REGISTRATION</p>
+        <h2>Создание клиента</h2>
+        <ol>
+          <li>Откройте раздел управления приложениями.</li>
+          <li>Укажите название приложения.</li>
+          <li>Введите уникальный Client ID.</li>
+          <li>Выберите тип клиента: Public или Confidential.</li>
+          <li>Укажите Redirect URI, зарегистрированный в приложении.</li>
+          <li>Выберите необходимые разрешения Profile и Email.</li>
+          <li>Сохраните форму и проверьте появление записи в списке.</li>
+        </ol>
+
+        <div class="note">
+          <strong>Client ID</strong>
+          <p>
+            Это идентификатор приложения, а не пользователя. Он должен быть
+            уникальным среди зарегистрированных клиентов.
+          </p>
+        </div>
+      </section>
+
+      <section class="section">
+        <p class="section-label">03 / CLIENT TYPES</p>
+        <h2>Типы клиентов</h2>
+
+        <div class="cards">
+          <div class="card">
+            <div class="card-number">PUBLIC</div>
+            <h3>Public client</h3>
+            <p>
+              Клиент, который не может безопасно хранить секрет. Например,
+              приложение в браузере или нативное приложение. Для Authorization
+              Code Flow используется PKCE.
+            </p>
+          </div>
+
+          <div class="card">
+            <div class="card-number">CONFIDENTIAL</div>
+            <h3>Confidential client</h3>
+            <p>
+              Клиент, способный хранить секрет на защищённом сервере. Секрет
+              нельзя помещать в публичный HTML или JavaScript.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <p class="section-label">04 / REDIRECT URI</p>
+        <h2>Настройка Redirect URI</h2>
+        <p>
+          Redirect URI определяет адрес, на который SSO возвращает браузер после
+          обработки запроса авторизации.
+        </p>
+        <ul>
+          <li>Адрес должен быть абсолютным HTTP/HTTPS URL.</li>
+          <li>
+            HTTP допускается только для loopback-адресов в текущей проверке
+            админки.
+          </li>
+          <li>Для остальных адресов используй HTTPS.</li>
+          <li>
+            Redirect URI в запросе должен совпадать с зарегистрированным
+            адресом.
+          </li>
+        </ul>
+        <div class="note">
+          <strong>Безопасность</strong>
+          <p>
+            Не указывай произвольные адреса перенаправления, которыми ты не
+            управляешь. Это может привести к утечке кода авторизации.
+          </p>
+        </div>
+      </section>
+
+      <section class="section">
+        <p class="section-label">05 / VERIFICATION</p>
+        <h2>Проверка регистрации</h2>
+        <ol>
+          <li>Убедитесь, что клиент появился в списке.</li>
+          <li>Проверьте Client ID, тип и Redirect URI.</li>
+          <li>Запустите отдельное тестовое приложение с этим Client ID.</li>
+          <li>Проверьте Authorization Code Flow с PKCE.</li>
+          <li>Убедитесь, что неправильный Redirect URI отклоняется.</li>
+        </ol>
+        <p>
+          Создание записи в базе само по себе не подтверждает, что стороннее
+          приложение успешно проходит авторизацию.
+        </p>
+      </section>
+
+      <section class="section">
+        <p class="section-label">06 / REMOVAL</p>
+        <h2>Удаление клиента</h2>
+        <p>
+          Удаление регистрации запрещает использовать её как действующий клиент
+          для новых запросов авторизации. Перед удалением проверьте, что
+          приложение больше не использует эту регистрацию.
+        </p>
+        <p>
+          Удаление регистрации и отзыв уже выданных токенов — разные задачи.
+          После удаления необходимо отдельно проверить поведение ранее выданных
+          токенов и связанных авторизаций.
+        </p>
+      </section>
+
+      <footer>
+        <a href="./index.html">← Главная документации</a>
+        <a href="./administration.html">Создание администратора →</a>
+      </footer>
+    </main>
+  </body>
+</html>

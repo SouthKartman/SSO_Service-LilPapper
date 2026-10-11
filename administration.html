@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Создание администратора SSO и назначение роли Admin в PostgreSQL."
+    />
+    <title>Администрирование — SSO Docs</title>
+    <link rel="stylesheet" href="./assets/docs.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="./index.html"
+        ><span class="brand-icon">S</span
+        ><span>SSO <span class="brand-muted">Developer Docs</span></span></a
+      >
+      <nav class="top-links">
+        <a href="./index.html">← Все разделы</a
+        ><a href="/oauth-test.html" class="nav-button">OAuth Test ↗</a>
+      </nav>
+    </header>
+    <main>
+      <section class="hero">
+        <div class="eyebrow">
+          <span class="status-dot"></span> ADMINISTRATION
+        </div>
+        <h1>Создание <span>администратора</span></h1>
+        <p class="hero-description">
+          Аккаунт регистрируется обычным способом, а административные права
+          выдаются отдельно через PostgreSQL.
+        </p>
+        <div class="hero-actions">
+          <!-- <a class="button button-primary" href="/oauth-test.html"
+            >Открыть тестовую страницу →</a> -->
+          <a class="button button-secondary" href="./index.html"
+            >К документации</a
+          >
+        </div>
+        <div class="protocols">
+          <span>AspNetUsers</span><span>AspNetRoles</span
+          ><span>AspNetUserRoles</span>
+        </div>
+      </section>
+      <!-- <section class="section" id="quick-links">
+        <div class="section-heading">
+          <div>
+            <p class="section-label">QUICK ACCESS</p>
+            <h2>Быстрые ссылки проекта</h2>
+          </div>
+        </div>
+        <div class="resource-list">
+          <a class="resource" href="/Admin/Applications"
+            ><div>
+              <strong>Админ-панель</strong>
+              <p>Управление приложениями SSO.</p>
+            </div>
+            <span>↗</span></a
+          >
+          <a class="resource" href="/oauth-test.html"
+            ><div>
+              <strong>Локальная тестовая страница</strong>
+              <p>Проверка авторизации и токенов.</p>
+            </div>
+            <span>↗</span></a
+          >
+          <a class="resource" href="/Account/Login"
+            ><div>
+              <strong>Авторизация / вход</strong>
+              <p>Страница входа в SSO.</p>
+            </div>
+            <span>↗</span></a
+          >
+          <a class="resource" href="/Account/Logout"
+            ><div>
+              <strong>Логаут / выход</strong>
+              <p>Маршрут завершения сессии. Может требовать POST.</p>
+            </div>
+            <span>↗</span></a
+          >
+          <a class="resource" href="/"
+            ><div>
+              <strong>Главная локального проекта</strong>
+              <p>Корневой адрес SSO-сервиса.</p>
+            </div>
+            <span>↗</span></a
+          >
+        </div>
+      </section> -->
+      <section class="section">
+        <div class="info-panel">
+          <div>
+            <p class="section-label">IMPORTANT</p>
+            <h2>Сначала зарегистрируйте аккаунт</h2>
+            <p>
+              Откройте тестовую страницу авторизации и создайте аккаунт через
+              предусмотренную приложением форму. Затем найдите эту запись в
+              PostgreSQL по email.
+            </p>
+          </div>
+          <div class="info-aside">
+            <span class="aside-label">Доступ</span>
+            <p>
+              Назначайте роль Admin только аккаунту, которым вы управляете: роль
+              предоставляет привилегированный доступ.
+            </p>
+          </div>
+        </div>
+      </section>
+      <section class="section">
+        <div class="section-heading">
+          <div>
+            <p class="section-label">STEP 01</p>
+            <h2>Проверьте роль Admin</h2>
+          </div>
+        </div>
+        <p>
+          В текущей базе подтверждена роль с <code>Id = 1</code> и
+          <code>Name = 'Admin'</code>. В запросах ниже роль выбирается по
+          названию, чтобы не зависеть от числового Id.
+        </p>
+        <pre><code>SELECT "Id", "Name", "NormalizedName"
+FROM public."AspNetRoles"
+ORDER BY "Id";</code></pre>
+      </section>
+      <section class="section">
+        <div class="section-heading">
+          <div>
+            <p class="section-label">STEP 02</p>
+            <h2>Найдите аккаунт</h2>
+          </div>
+        </div>
+        <p>Замените email на адрес зарегистрированного аккаунта.</p>
+        <pre><code>SELECT "Id", "UserName", "Email"
+FROM public."AspNetUsers"
+WHERE "Email" = 'admin@example.com';</code></pre>
+      </section>
+      <section class="section">
+        <div class="section-heading">
+          <div>
+            <p class="section-label">STEP 03</p>
+            <h2>Назначьте роль</h2>
+          </div>
+        </div>
+        <p>
+          Запрос добавит связь, только если пользователь и роль существуют и эта
+          связь ещё не создана.
+        </p>
+        <pre><code>INSERT INTO public."AspNetUserRoles" ("UserId", "RoleId")
+SELECT u."Id", r."Id"
+FROM public."AspNetUsers" AS u
+CROSS JOIN public."AspNetRoles" AS r
+WHERE u."Email" = 'admin@example.com'
+  AND r."Name" = 'Admin'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM public."AspNetUserRoles" AS ur
+      WHERE ur."UserId" = u."Id"
+        AND ur."RoleId" = r."Id"
+  );</code></pre>
+        <p>
+          <strong>Важно:</strong> сначала убедитесь, что email принадлежит
+          нужному аккаунту. Если пользователь или роль не найдены, запрос ничего
+          не вставит.
+        </p>
+      </section>
+      <section class="section">
+        <div class="section-heading">
+          <div>
+            <p class="section-label">STEP 04</p>
+            <h2>Проверьте назначение</h2>
+          </div>
+        </div>
+        <pre><code>SELECT
+    u."Id" AS "UserId",
+    u."UserName",
+    u."Email",
+    r."Id" AS "RoleId",
+    r."Name" AS "RoleName"
+FROM public."AspNetUsers" AS u
+JOIN public."AspNetUserRoles" AS ur ON ur."UserId" = u."Id"
+JOIN public."AspNetRoles" AS r ON r."Id" = ur."RoleId"
+WHERE u."Email" = 'admin@example.com';</code></pre>
+      </section>
+      <section class="section">
+        <div class="info-panel">
+          <div>
+            <p class="section-label">STEP 05</p>
+            <h2>Войдите заново</h2>
+            <p>
+              Выйдите из системы, войдите под созданным аккаунтом и откройте
+              <code>/Admin/Applications</code>.
+            </p>
+          </div>
+          <div class="info-aside">
+            <span class="aside-label">Если доступ запрещён</span>
+            <p>
+              Проверьте политику <code>AdminOnly</code>, настройку cookie/claims
+              и то, что приложение действительно проверяет роль. Одной записи в
+              БД недостаточно, если авторизация не настроена соответствующим
+              образом.
+            </p>
+          </div>
+        </div>
+      </section>
+      <footer>
+        <span>SSO Developer Docs</span
+        ><span><a href="./index.html">На главную</a></span>
+      </footer>
+    </main>
+  </body>
+</html>

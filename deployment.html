@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Развёртывание SSO — документация</title>
+    <link rel="stylesheet" href="./assets/docs.css" />
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+      body {
+        margin: 0;
+        font:
+          16px/1.65 system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+      }
+      .wrap {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 36px 22px 72px;
+      }
+      .top {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 32px;
+      }
+      a {
+        color: var(--accent, #a78bfa);
+      }
+      .eyebrow {
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        font-size: 0.78rem;
+        opacity: 0.7;
+        display: none;
+      }
+      h1 {
+        font-size: clamp(2rem, 5vw, 3.2rem);
+        line-height: 1.1;
+        margin: 0.4rem 0 1rem;
+      }
+      h2 {
+        margin-top: 2.6rem;
+        padding-top: 1rem;
+        border-top: 1px solid #ffffff20;
+      }
+      h3 {
+        margin-top: 1.6rem;
+      }
+      .lead {
+        font-size: 1.1rem;
+        opacity: 0.85;
+        max-width: 780px;
+      }
+      .note,
+      .warn,
+      .ok {
+        padding: 14px 16px;
+        border: 1px solid #ffffff25;
+        border-radius: 12px;
+        margin: 18px 0;
+        background: #ffffff08;
+      }
+      .warn {
+        border-color: #d977064f;
+        background: #d9770612;
+      }
+      .ok {
+        border-color: #22c55e45;
+        background: #22c55e0d;
+      }
+      code,
+      pre {
+        font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+      }
+      code {
+        overflow-wrap: anywhere;
+      }
+      pre {
+        padding: 16px;
+        overflow: auto;
+        border: 1px solid #ffffff20;
+        border-radius: 12px;
+        background: #080b14;
+        line-height: 1.5;
+        font-size: 0.9rem;
+      }
+      .links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin: 20px 0 28px;
+      }
+      .links a {
+        display: inline-block;
+        padding: 8px 12px;
+        border: 1px solid #ffffff25;
+        border-radius: 9px;
+        text-decoration: none;
+      }
+      li {
+        margin: 0.45rem 0;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 16px 0;
+      }
+      th,
+      td {
+        text-align: left;
+        vertical-align: top;
+        border-bottom: 1px solid #ffffff20;
+        padding: 10px;
+      }
+      .muted {
+        opacity: 0.72;
+        font-size: 0.92rem;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <nav class="top">
+        <a href="./index.html">← Документация SSO</a>
+        <span class="eyebrow">Operations / Deployment</span>
+      </nav>
+
+      <p class="eyebrow">Руководство администратора</p>
+      <h1>Развёртывание SSO на чистом сервере</h1>
+      <p class="lead">
+        Порядок переноса ASP.NET Core SSO-сервиса на VPS: подготовка окружения,
+        PostgreSQL, миграции EF Core, HTTPS, проверка OpenID Connect и базовая
+        защита.
+      </p>
+
+      <div class="warn">
+        <strong>Важно.</strong> Это шаблон процедуры, а не подтверждение, что
+        проект уже готов к production. Перед запуском сверьте имена сервисов и
+        портов с текущими <code>Dockerfile</code>, <code>compose.yaml</code> и
+        конфигурацией приложения. Не переносите локальные
+        development-сертификаты и секреты на сервер.
+      </div>
+
+      <div class="links">
+        <a href="/.well-known/openid-configuration">OIDC Discovery</a>
+        <a
+          href="https://swagger.io/product/?utm_source=google-paid&utm_medium=ppcg&utm_campaign=G+-+API+Hub+-+EMEA+-+NB&utm_term=generate%20api%20docs&utm_content=p&gclsrc=aw.ds&gad_source=1&gad_campaignid=22683279347&gbraid=0AAAAAD_lD12zWkUJng0uIeeUPPzYpcs_p&gclid=CjwKCAjw56zWBhB0EiwAdPOQOXwqYuTYtVaJOTrjmv5AyWUm6wHP_3hbpvoW6pRuafMUylr0GKpf4hoCHOYQAvD_BwE"
+          >Swagger</a
+        >
+        <a href="/oauth-test.html">OAuth-тест</a>
+        <a href="/Admin/Applications">Панель приложений</a>
+      </div>
+
+      <h2>1. Что понадобится</h2>
+      <ul>
+        <li>
+          VPS с поддерживаемым Linux-дистрибутивом и доступом по SSH через ключ.
+        </li>
+        <li>
+          Домен, например <code>sso.example.com</code>, указывающий на публичный
+          IP сервера.
+        </li>
+        <li>
+          Docker Engine и Docker Compose plugin либо другой согласованный способ
+          запуска контейнера.
+        </li>
+        <li>
+          PostgreSQL, доступный приложению по приватной Docker-сети или
+          внутреннему адресу.
+        </li>
+        <li>Текущий исходный код проекта и проверенная сборка для .NET 10.</li>
+      </ul>
+
+      <h2>2. Подготовить сервер</h2>
+      <p>
+        Обновите систему, установите Docker по официальной инструкции для своего
+        дистрибутива и проверьте версии:
+      </p>
+      <pre><code>docker --version
+docker compose version</code></pre>
+      <p>Создайте каталог развёртывания, например:</p>
+      <pre><code>sudo mkdir -p /opt/sso
+sudo chown "$USER":"$USER" /opt/sso
+cd /opt/sso</code></pre>
+      <p>
+        Скопируйте проект или разверните его из репозитория в выбранный каталог.
+        Не помещайте файл с секретами в Git.
+      </p>
+
+      <h2>3. Настроить параметры окружения</h2>
+      <p>
+        В проекте строка подключения читается из
+        <code>ConnectionStrings:SsoDatabase</code>; в переменных окружения
+        ASP.NET Core ей соответствует
+        <code>ConnectionStrings__SsoDatabase</code>.
+      </p>
+      <p>
+        Пример значений для файла окружения — замените все демонстрационные
+        значения:
+      </p>
+      <pre><code># .env — не коммитить в Git и ограничить права доступа
+ASPNETCORE_ENVIRONMENT=Production
+ConnectionStrings__SsoDatabase=Host=postgres;Port=5432;Database=sso_auth;Username=sso_app;Password=REPLACE_WITH_LONG_RANDOM_SECRET</code></pre>
+      <div class="note">
+        Если PostgreSQL запущен как сервис Compose,
+        <code>Host=postgres</code> работает только тогда, когда сервис
+        действительно называется <code>postgres</code> и находится в той же
+        сети. Имя хоста должно совпадать с вашей конфигурацией.
+      </div>
+      <p>Ограничьте доступ к файлу с секретами:</p>
+      <pre><code>chmod 600 .env</code></pre>
+      <p>
+        В production также задайте публичный issuer через конфигурацию
+        приложения, если код поддерживает его настройку:
+        <code>https://sso.example.com/</code>. Адрес issuer должен совпадать с
+        внешним адресом сервиса и оставаться стабильным.
+      </p>
+
+      <h2>4. Подготовить PostgreSQL</h2>
+      <p>
+        Создайте отдельную базу и отдельного пользователя приложения с
+        минимально необходимыми правами. Не открывайте порт PostgreSQL в
+        публичный интернет: подключение должно идти из внутренней сети или через
+        защищённый административный канал.
+      </p>
+      <p>
+        Перед миграцией проверьте, что соединение из контейнера приложения
+        работает. Не используйте <code>EnsureCreated()</code> для базы,
+        управляемой EF Core migrations: применяйте существующие миграции.
+      </p>
+
+      <h2>5. Собрать и запустить контейнеры</h2>
+      <p>
+        Команды ниже — типовой порядок. Запускайте их из каталога, где
+        расположен ваш Compose-файл; названия сервисов должны соответствовать
+        реальному файлу.
+      </p>
+      <pre><code># Проверить итоговую конфигурацию Compose
+docker compose config
+
+# Собрать образы
+docker compose build
+
+# Запустить PostgreSQL и приложение
+docker compose up -d
+
+# Проверить состояние и логи
+docker compose ps
+docker compose logs --tail=200</code></pre>
+      <div class="warn">
+        Не копируйте в production случайный Dockerfile или Compose-файл из
+        примера без сверки. Проверьте, что контейнер приложения слушает порт, на
+        который настроен reverse proxy, а база не публикует порт наружу.
+      </div>
+
+      <h2>6. Применить миграции EF Core</h2>
+      <p>
+        Миграции должны создавать таблицы ASP.NET Core Identity и OpenIddict, а
+        также все таблицы, определённые текущим
+        <code>ApplicationDbContext</code>. Сначала проверьте наличие миграций в
+        репозитории.
+      </p>
+      <p>
+        Если в проекте установлен <code>dotnet-ef</code> и SDK доступен в среде
+        выполнения команд:
+      </p>
+      <pre><code>dotnet tool restore
+dotnet ef migrations list
+dotnet ef database update</code></pre>
+      <p>
+        Если приложение запускается только в контейнере, выполните миграцию из
+        контейнера/одноразового migration-контейнера с теми же сборкой и
+        переменными окружения. Не устанавливайте SDK в production runtime-образ
+        только ради миграций, если для этого предусмотрен отдельный процесс.
+      </p>
+      <div class="note">
+        Если <code>dotnet ef database update</code> не видит проект или
+        контекст, укажите актуальные параметры <code>--project</code> и
+        <code>--startup-project</code> согласно расположению
+        <code>sso-service.csproj</code>. Не создавайте новую миграцию на сервере
+        для исправления отсутствующей миграции в репозитории.
+      </div>
+
+      <h2>7. Настроить HTTPS и reverse proxy</h2>
+      <ol>
+        <li>Направьте DNS-запись домена на VPS.</li>
+        <li>
+          Настройте reverse proxy (например, Nginx или Caddy) для завершения TLS
+          и проксирования запросов к внутреннему HTTP-порту приложения.
+        </li>
+        <li>
+          Передавайте исходные схему и host через стандартные заголовки прокси и
+          настройте ASP.NET Core Forwarded Headers для доверенного прокси.
+        </li>
+        <li>
+          Ограничьте доверие к forwarded-заголовкам конкретным прокси/сетью; не
+          принимайте их безусловно от произвольных клиентов.
+        </li>
+        <li>
+          Проверьте автоматическое продление сертификата и обновление
+          конфигурации после продления.
+        </li>
+      </ol>
+      <p>
+        Обычно наружу открывают только SSH и веб-порты 80/443. Внутренний порт
+        приложения и PostgreSQL не должны быть доступны всему интернету.
+      </p>
+
+      <h2>8. Сертификаты OpenIddict и ключи</h2>
+      <p>
+        В production замените development signing/encryption certificates на
+        подходящие production-сертификаты или управляемое хранилище ключей.
+        Защитите приватные ключи, ограничьте доступ к ним и организуйте ротацию.
+      </p>
+      <p>
+        Сохраните постоянные ASP.NET Core Data Protection keys между
+        перезапусками и обновлениями контейнера, если приложение использует
+        cookie authentication. Для нескольких экземпляров все экземпляры должны
+        использовать согласованное хранилище ключей и общий application name.
+      </p>
+      <div class="warn">
+        Не генерируйте новый signing key при каждом старте. Это может сделать
+        уже выданные токены непроверяемыми. Не используйте
+        <code>UseDevelopmentSigningCertificate()</code> и
+        <code>UseDevelopmentEncryptionCertificate()</code> как
+        production-настройку.
+      </div>
+
+      <h2>9. Первый запуск и администратор</h2>
+      <ol>
+        <li>
+          Откройте публичный адрес
+          <code>https://sso.example.com/.well-known/openid-configuration</code>.
+        </li>
+        <li>
+          Убедитесь, что в metadata endpoint-ы указывают на публичный
+          HTTPS-домен, а не на <code>localhost</code> или внутреннее имя
+          контейнера.
+        </li>
+        <li>
+          Проверьте регистрацию и вход, если они включены в текущей
+          конфигурации.
+        </li>
+        <li>
+          Создайте обычную учётную запись, затем назначьте ей роль
+          <code>Admin</code> контролируемым способом, предусмотренным проектом.
+        </li>
+        <li>
+          Откройте <code>/Admin/Applications</code> и зарегистрируйте клиентское
+          приложение.
+        </li>
+        <li>
+          Пройдите OAuth-тест на <code>/oauth-test.html</code> только если эта
+          тестовая страница предназначена для окружения. Для публичного
+          production-сервиса ограничьте или удалите тестовые инструменты.
+        </li>
+      </ol>
+
+      <h2>10. Проверки перед публикацией</h2>
+      <ul>
+        <li>
+          В конфигурации нет issuer <code>https://localhost:7076/</code>,
+          тестовых Client ID или development-сертификатов.
+        </li>
+        <li>
+          В логах нет паролей, access/refresh tokens, cookie или приватных
+          ключей.
+        </li>
+        <li>
+          PostgreSQL не опубликован на публичный интерфейс; резервные копии
+          создаются и проверяются.
+        </li>
+        <li>
+          Cookie настроены безопасно для HTTPS, а HTTPS redirect и forwarded
+          headers работают корректно.
+        </li>
+        <li>
+          Redirect URI каждого OAuth-клиента проверяется на точное совпадение;
+          wildcard и произвольные callback URL не разрешены.
+        </li>
+        <li>
+          Для production отключены или защищены Swagger, тестовая OAuth-страница
+          и другие диагностические маршруты.
+        </li>
+        <li>
+          Есть мониторинг свободного места, доступности БД, ошибок приложения и
+          срока действия сертификатов.
+        </li>
+      </ul>
+
+      <h2>11. Обновление приложения</h2>
+      <ol>
+        <li>
+          Сделайте резервную копию PostgreSQL и проверьте возможность
+          восстановления.
+        </li>
+        <li>
+          Проверьте изменения схемы и совместимость миграций с предыдущей
+          версией приложения.
+        </li>
+        <li>Соберите и проверьте новый образ.</li>
+        <li>Примените миграции согласно выбранной стратегии релиза.</li>
+        <li>
+          Перезапустите сервис, проверьте health/logs, Discovery и тестовый
+          вход.
+        </li>
+        <li>
+          При ошибке используйте заранее подготовленный план отката; откат схемы
+          БД не всегда безопасен автоматически.
+        </li>
+      </ol>
+
+      <h2>12. Полезные команды диагностики</h2>
+      <pre><code># Статус контейнеров
+docker compose ps
+
+# Последние логи сервиса
+docker compose logs --tail=200 sso-service
+
+# Проверка HTTP-ответа Discovery с сервера
+curl -fsS https://sso.example.com/.well-known/openid-configuration
+
+# Используйте реальное имя сервиса из compose.yaml</code></pre>
+      <p class="muted">
+        Команда логов выше предполагает имя сервиса <code>sso-service</code>;
+        если в вашем Compose оно другое, замените его.
+      </p>
+
+      <footer
+        style="
+          margin-top: 44px;
+          padding-top: 20px;
+          border-top: 1px solid #ffffff20;
+        "
+        class="muted"
+      >
+        Документация для проекта SSO на ASP.NET Core / .NET 10, PostgreSQL, EF
+        Core и OpenIddict. Значения домена, сервиса и инфраструктуры являются
+        примерами и должны быть заменены на фактические.
+      </footer>
+    </main>
+  </body>
+</html>

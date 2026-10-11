@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Настройка секретов внешних провайдеров входа и добавление OAuth/OIDC-провайдеров в SSO на ASP.NET Core."
+    />
+    <title>Внешние провайдеры — SSO Developer Docs</title>
+    <link rel="stylesheet" href="./assets/docs.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="./index.html"
+        ><span class="brand-icon">S</span
+        ><span>SSO <span class="brand-muted">Developer Docs</span></span></a
+      >
+      <nav class="top-links">
+        <a href="./index.html">← Все разделы</a
+        ><a href="/Account/Login" class="nav-button">Страница входа ↗</a>
+      </nav>
+    </header>
+    <main>
+      <section class="hero">
+        <div class="eyebrow">
+          <span class="status-dot"></span> IDENTITY / EXTERNAL AUTH
+        </div>
+        <h1>Внешние <span>провайдеры</span></h1>
+        <p class="hero-description">
+          Как хранить credentials внешних OAuth/OIDC-провайдеров, настроить
+          существующий провайдер и добавить новый в SSO.
+        </p>
+        <div class="hero-actions">
+          <a class="button button-primary" href="#credentials"
+            >Настройка credentials →</a
+          ><a class="button button-secondary" href="#add-provider"
+            >Добавить провайдера</a
+          >
+        </div>
+        <div class="protocols">
+          <span>ASP.NET Core Identity</span><span>OAuth 2.0</span
+          ><span>OpenID Connect</span><span>Secrets</span>
+        </div>
+      </section>
+
+      <section class="section" id="model">
+        <div class="section-heading">
+          <div>
+            <p class="section-label">CONCEPTS</p>
+            <h2>Два разных уровня интеграции</h2>
+          </div>
+        </div>
+        <div class="cards">
+          <div class="card">
+            <div class="card-number">01</div>
+            <h3>Вход пользователя в SSO</h3>
+            <p>
+              GitHub, Google и другие внешние провайдеры подключаются к ASP.NET
+              Core Identity. Их callback обрабатывает middleware приложения.
+            </p>
+          </div>
+          <div class="card">
+            <div class="card-number">02</div>
+            <h3>Клиенты SSO</h3>
+            <p>
+              Сторонние сайты и приложения регистрируются отдельно через
+              OpenIddict/административную панель. Их Client ID и Redirect URI —
+              не credentials GitHub или Google.
+            </p>
+          </div>
+        </div>
+        <div class="info-panel">
+          <div>
+            <p class="section-label">IMPORTANT</p>
+            <h2>Не путайте credentials</h2>
+            <p>
+              OAuth Client ID и Client Secret внешнего провайдера используются
+              SSO-сервисом, чтобы входить через этот провайдер. Client ID и
+              секрет клиента SSO используются сторонним приложением для
+              подключения к вашему SSO. Это разные наборы значений.
+            </p>
+          </div>
+          <div class="info-aside">
+            <span class="aside-label">Хранение</span>
+            <p>
+              Не сохраняйте секреты провайдеров в PostgreSQL Identity и не
+              отдавайте их браузеру.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="credentials">
+        <div class="section-heading">
+          <div>
+            <p class="section-label">STEP 01</p>
+            <h2>Где вводить Client ID и Client Secret</h2>
+          </div>
+        </div>
+        <p>
+          Для локальной разработки используйте .NET User Secrets или переменные
+          окружения. Значения ниже — примеры имён конфигурации, а не готовые
+          credentials. Код приложения должен читать эти ключи из
+          <code>IConfiguration</code>.
+        </p>
+        <h3>Вариант A — .NET User Secrets</h3>
+        <p>
+          Из каталога проекта, где находится файл <code>.csproj</code>,
+          выполните:
+        </p>
+        <pre><code>dotnet user-secrets init
+dotnet user-secrets set "Authentication:GitHub:ClientId" "YOUR_GITHUB_CLIENT_ID"
+dotnet user-secrets set "Authentication:GitHub:ClientSecret" "YOUR_GITHUB_CLIENT_SECRET"</code></pre>
+        <p>Для Google используйте отдельные ключи:</p>
+        <pre><code>dotnet user-secrets set "Authentication:Google:ClientId" "YOUR_GOOGLE_CLIENT_ID"
+dotnet user-secrets set "Authentication:Google:ClientSecret" "YOUR_GOOGLE_CLIENT_SECRET"</code></pre>
+        <p>
+          Команды создают локальное хранилище секретов для проекта. Они не
+          добавляют провайдера автоматически: код провайдера должен быть
+          зарегистрирован в <code>Program.cs</code>.
+        </p>
+
+        <h3>Вариант B — переменные окружения</h3>
+        <p>
+          В ASP.NET Core двойное подчёркивание <code>__</code> соответствует
+          разделителю <code>:</code> в ключе конфигурации.
+        </p>
+        <pre><code>Authentication__GitHub__ClientId=YOUR_GITHUB_CLIENT_ID
+Authentication__GitHub__ClientSecret=YOUR_GITHUB_CLIENT_SECRET
+Authentication__Google__ClientId=YOUR_GOOGLE_CLIENT_ID
+Authentication__Google__ClientSecret=YOUR_GOOGLE_CLIENT_SECRET</code></pre>
+        <p>
+          В Docker Compose задавайте их через окружение контейнера или файл
+          `.env`, который не хранится в Git. На сервере используйте защищённое
+          хранилище секретов и ограничьте доступ к конфигурации.
+        </p>
+
+        <h3>Вариант C — appsettings.Development.json</h3>
+        <p>
+          Подходит только для временной локальной настройки, если файл исключён
+          из Git. User Secrets предпочтительнее.
+        </p>
+        <pre><code>{
+  "Authentication": {
+    "GitHub": {
+      "ClientId": "YOUR_GITHUB_CLIENT_ID",
+      "ClientSecret": "YOUR_GITHUB_CLIENT_SECRET"
+    },
+    "Google": {
+      "ClientId": "YOUR_GOOGLE_CLIENT_ID",
+      "ClientSecret": "YOUR_GOOGLE_CLIENT_SECRET"
+    }
+  }
+}</code></pre>
+        <div class="warn">
+          <strong>Безопасность:</strong> никогда не публикуйте реальные Client
+          Secret, access token или refresh token. Если секрет попал в Git или
+          логи, отзовите его у провайдера и выпустите новый.
+        </div>
+      </section>
+
+      <section class="section" id="provider-console">
+        <div class="section-heading">
+          <div>
+            <p class="section-label">STEP 02</p>
+            <h2>Настройки в кабинете провайдера</h2>
+          </div>
+        </div>
+        <ol>
+          <li>Создайте OAuth/OIDC-приложение в кабинете нужного провайдера.</li>
+          <li>
+            Добавьте разрешённый redirect/callback URL, который соответствует
+            настройке middleware в SSO.
+          </li>
+          <li>Выберите только необходимые permissions/scopes.</li>
+          <li>
+            Скопируйте Client ID и Client Secret в локальное хранилище секретов
+            или окружение сервера.
+          </li>
+          <li>
+            Сверьте callback URL посимвольно: схема HTTPS, домен, порт и путь
+            должны совпадать с конфигурацией.
+          </li>
+        </ol>
+        <p>
+          Типичный callback ASP.NET Core middleware выглядит как
+          <code>https://sso.example.com/signin-{scheme}</code>, но фактический
+          путь задаётся настройкой <code>CallbackPath</code>. Не угадывайте его
+          по имени кнопки — сверяйтесь с <code>Program.cs</code> и настройками
+          приложения у провайдера.
+        </p>
+        <div class="note">
+          Локальные URL с localhost, IP-адресами и нестандартными портами
+          принимаются не всеми провайдерами. Если провайдер требует публичный
+          домен, используйте домен/HTTPS-туннель для тестирования или настройте
+          домен при развёртывании. Само добавление credentials не отменяет
+          требования провайдера к redirect URI.
+        </div>
+      </section>
+
+      <section class="section" id="add-provider">
+        <div class="section-heading">
+          <div>
+            <p class="section-label">EXTENSION GUIDE</p>
+            <h2>Как добавить собственного провайдера</h2>
+          </div>
+        </div>
+        <p>
+          Добавление провайдера — это не только ввод Client ID и Client Secret.
+          Нужно зарегистрировать схему аутентификации, настроить callback,
+          получить и проверить claims и добавить провайдера в разрешённый список
+          UI/обработчиков входа.
+        </p>
+
+        <h3>1. Определите протокол</h3>
+        <div class="resource-list">
+          <div class="resource">
+            <div>
+              <strong>OpenID Connect</strong>
+              <p>
+                Предпочтителен, если провайдер публикует OIDC discovery,
+                поддерживает стандартный login flow и возвращает проверяемый ID
+                token.
+              </p>
+            </div>
+            <span>OIDC</span>
+          </div>
+          <div class="resource">
+            <div>
+              <strong>OAuth 2.0</strong>
+              <p>
+                Подходит, когда провайдер предоставляет OAuth endpoints и API
+                профиля, но не полноценный OIDC. Обычно требуется отдельный
+                запрос к API и маппинг claims.
+              </p>
+            </div>
+            <span>OAuth</span>
+          </div>
+          <div class="resource">
+            <div>
+              <strong>Нестандартный login API</strong>
+              <p>
+                Если провайдер не поддерживает подходящий стандартный flow,
+                может потребоваться специализированная интеграция. Не считайте
+                любой login widget совместимым с AddOAuth автоматически.
+              </p>
+            </div>
+            <span>Custom</span>
+          </div>
+        </div>
+
+        <h3>2. Добавьте credentials в конфигурацию</h3>
+        <p>
+          Например, для собственного провайдера <code>Acme</code> используйте
+          отдельный префикс:
+        </p>
+        <pre><code>dotnet user-secrets set "Authentication:Acme:ClientId" "YOUR_CLIENT_ID"
+dotnet user-secrets set "Authentication:Acme:ClientSecret" "YOUR_CLIENT_SECRET"</code></pre>
+
+        <h3>3. Зарегистрируйте схему в Program.cs</h3>
+        <p>
+          Для провайдера, совместимого с OpenID Connect, обычно настраивается
+          OIDC middleware и задаются authority, client ID, secret, scopes и
+          callback. Для обычного OAuth 2.0 применяется OAuth middleware с
+          authorize/token/user-information endpoints и маппингом claims.
+        </p>
+        <p>
+          Упрощённый пример для стандартного OAuth 2.0-провайдера (не копируйте
+          его без реальных endpoints и схемы ответа конкретного провайдера):
+        </p>
+        <pre><code>builder.Services
+    .AddAuthentication()
+    .AddOAuth("Acme", options =&gt;
+    {
+        options.ClientId =
+            builder.Configuration["Authentication:Acme:ClientId"]!;
+        options.ClientSecret =
+            builder.Configuration["Authentication:Acme:ClientSecret"]!;
+
+        options.CallbackPath = "/signin-acme";
+
+        // Заполните endpoints, scopes, SignInScheme
+        // и ClaimActions по официальной документации Acme.
+    });</code></pre>
+        <div class="warn">
+          Этот пример намеренно неполный: без authorize endpoint, token
+          endpoint, UserInformationEndpoint, корректного SignInScheme и claim
+          mapping он не реализует рабочий вход. Если провайдер поддерживает
+          OIDC, предпочтительно использовать OIDC middleware вместо ручной
+          OAuth-настройки.
+        </div>
+
+        <h3>4. Настройте callback и claims</h3>
+        <ul>
+          <li>
+            Зарегистрируйте callback path в коде и соответствующий полный HTTPS
+            URL в кабинете провайдера.
+          </li>
+          <li>
+            Настройте внешний cookie/sign-in scheme, который использует ASP.NET
+            Core Identity.
+          </li>
+          <li>
+            Сопоставьте стабильный уникальный идентификатор пользователя
+            провайдера с <code>ClaimTypes.NameIdentifier</code> или
+            эквивалентным OIDC claim <code>sub</code>.
+          </li>
+          <li>
+            Имя и email запрашивайте только при наличии нужных scopes. Не каждый
+            провайдер возвращает email; не используйте email как внешний
+            ProviderKey.
+          </li>
+          <li>
+            Для OAuth API, который возвращает профиль отдельным запросом,
+            реализуйте запрос к user-info endpoint и проверяйте HTTP-ответ и
+            структуру JSON.
+          </li>
+        </ul>
+
+        <h3>5. Добавьте схему в разрешённый список приложения</h3>
+        <p>
+          Если обработчик внешнего входа содержит allowlist, добавьте туда
+          точное имя схемы, например <code>Acme</code>. Добавьте кнопку/форму
+          входа, которая отправляет это имя обработчику. Имя схемы должно
+          совпадать в <code>Program.cs</code>, форме входа и callback-логике.
+        </p>
+
+        <h3>6. Сохраните связь с локальным пользователем</h3>
+        <p>
+          При первой регистрации создайте <code>ApplicationUser</code>, затем
+          сохраните внешний логин через
+          <code>UserManager.AddLoginAsync(user, info)</code>. Для повторного
+          входа сначала используйте существующую привязку. Если email уже занят,
+          не объединяйте аккаунты автоматически только по совпадению email:
+          попросите пользователя войти в существующий аккаунт и пройти отдельный
+          защищённый flow привязки.
+        </p>
+
+        <h3>7. Проверьте сценарии</h3>
+        <ul>
+          <li>
+            Новая регистрация: пользователь создан и внешний логин сохранён.
+          </li>
+          <li>Повторный вход: находится существующая привязка.</li>
+          <li>
+            Пустой email: flow не ломается и использует стабильный provider user
+            ID.
+          </li>
+          <li>
+            Занятый email: второй пользователь не создаётся и аккаунты не
+            объединяются автоматически.
+          </li>
+          <li>
+            Ошибка провайдера или отмена входа: показывается безопасное
+            сообщение, секреты и токены не попадают в логи.
+          </li>
+          <li>
+            Callback в production использует HTTPS и точно совпадает с
+            разрешённым URL.
+          </li>
+        </ul>
+      </section>
+
+      <section class="section" id="current-status">
+        <div class="info-panel">
+          <div>
+            <p class="section-label">PROJECT STATUS</p>
+            <h2>Credentials не включают провайдера автоматически</h2>
+            <p>
+              Документация описывает общий способ настройки. Поддержка
+              конкретного провайдера появляется только после реализации и
+              проверки соответствующего middleware/API в коде. Google и GitHub
+              имеют собственные настройки; VK ID и Telegram Login могут
+              требовать отдельной OIDC- или специализированной интеграции.
+            </p>
+          </div>
+          <div class="info-aside">
+            <span class="aside-label">После изменений</span>
+            <p>
+              Выполните <code>dotnet build</code>, запустите приложение и
+              проверьте регистрацию, повторный вход, отмену авторизации и
+              ошибочные callback.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <footer>
+        <span>SSO Developer Docs</span
+        ><span><a href="./index.html">На главную</a></span>
+      </footer>
+    </main>
+  </body>
+</html>

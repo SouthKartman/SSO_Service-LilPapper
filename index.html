@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Документация SSO: OpenID Connect, OAuth 2.0, управление приложениями и администраторами."
+    />
+    <title>SSO Developer Docs</title>
+    <link rel="stylesheet" href="./assets/docs.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="./index.html"
+        ><span class="brand-icon">S</span
+        ><span>SSO <span class="brand-muted">Developer Docs</span></span></a
+      >
+      <nav class="top-links">
+        <a
+          href="/.well-known/openid-configuration"
+          target="_blank"
+          rel="noreferrer"
+          >OIDC Discovery ↗</a
+        ><a
+          href="/https:/https://swagger.io/product/?utm_source=google-paid&utm_medium=ppcg&utm_campaign=G+-+API+Hub+-+EMEA+-+NB&utm_term=generate%20api%20docs&utm_content=p&gclsrc=aw.ds&gad_source=1&gad_campaignid=22683279347&gbraid=0AAAAAD_lD12zWkUJng0uIeeUPPzYpcs_p&gclid=CjwKCAjw56zWBhB0EiwAdPOQOXwqYuTYtVaJOTrjmv5AyWUm6wHP_3hbpvoW6pRuafMUylr0GKpf4hoCHOYQAvD_BwE.io/product/?utm_source=google-paid&utm_medium=ppcg&utm_campaign=G+-+API+Hub+-+EMEA+-+NB&utm_term=generate%20api%20docs&utm_content=p&gclsrc=aw.ds&gad_source=1&gad_campaignid=22683279347&gbraid=0AAAAAD_lD12zWkUJng0uIeeUPPzYpcs_p&gclid=CjwKCAjw56zWBhB0EiwAdPOQOXwqYuTYtVaJOTrjmv5AyWUm6wHP_3hbpvoW6pRuafMUylr0GKpf4hoCHOYQAvD_BwE"
+          class="nav-button"
+          >Swagger API ↗</a
+        >
+      </nav>
+    </header>
+    <main>
+      <section class="hero">
+        <div class="eyebrow">
+          <span class="status-dot"></span>    Developer Portal     </div>
+        <h1>Интеграция с <span>SSO</span></h1>
+        <p class="hero-description">
+          Руководство для разработчиков, которые подключают приложения к единой
+          системе авторизации через OAuth 2.0 и OpenID Connect.
+        </p>
+        <div class="hero-actions">
+          <a class="button button-primary" href="#quick-start"
+            >Начать интеграцию <span>→</span></a
+        </div>
+        <a class="button button-secondary" href="./deployment.html"
+            >Развёртывание сервиса <span>→</span></a
+        </div>
+        <div class="protocols">
+          <span>OpenID Connect</span><span>OAuth 2.0</span
+          ><span>Authorization Code</span><span>PKCE</span>
+        </div>
+      </section>
+      <section class="section" id="quick-start">
+        <div class="section-heading">
+          <div>
+            <p class="section-label">GETTING STARTED</p>
+            <h2>С чего начать</h2>
+          </div>
+          <p>Основные этапы подключения стороннего приложения.</p>
+        </div>
+        <div class="cards">
+          <a class="card" href="./applications.html"
+            ><div class="card-number">01</div>
+            <h3>Регистрация приложения</h3>
+            <p>
+              Создайте OAuth/OIDC-клиента в административной панели SSO, задайте
+              Client ID и Redirect URI.
+            </p>
+            <span class="card-link">Подробнее →</span></a
+          >
+          <a class="card" href="./integration.html#authorization"
+            ><div class="card-number">02</div>
+            <h3>Настройка авторизации</h3>
+            <p>
+              Изучите Authorization Code Flow, PKCE и последовательность входа
+              через SSO.
+            </p>
+            <span class="card-link">Подробнее →</span></a
+          >
+          <a class="card" href="./integration.html#tokens"
+            ><div class="card-number">03</div>
+            <h3>Работа с токенами</h3>
+            <p>
+              Разберитесь в назначении access token, ID token, refresh token и
+              проверке доступа.
+            </p>
+            <span class="card-link">Подробнее →</span></a
+          >
+        </div>
+      </section>
+      <section class="section">
+        <div class="info-panel">
+          <div>
+            <p class="section-label">APPLICATION SETUP</p>
+            <h2>Подключение нового клиента</h2>
+            <p>
+              Каждый сторонний сайт или сервис должен иметь собственную
+              регистрацию в SSO. Client ID и Redirect URI должны соответствовать
+              настройкам клиента.
+            </p>
+          </div>
+          <div class="info-aside">
+            <span class="aside-label">Важно</span>
+            <p>
+              Для браузерных приложений используй Authorization Code Flow с
+              PKCE. Не помещай Client Secret в HTML или JavaScript.
+            </p>
+          </div>
+        </div>
+      </section>
+      <section class="section" id="authorization">
+        <div class="section-heading">
+          <div>
+            <p class="section-label">AUTHENTICATION FLOW</p>
+            <h2>Как работает вход</h2>
+          </div>
+        </div>
+        <div class="flow">
+          <div class="flow-step">
+            <span>01</span><strong>Приложение</strong>
+            <p>Создаёт запрос авторизации и PKCE challenge.</p>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step">
+            <span>02</span><strong>SSO</strong>
+            <p>Проверяет клиента и выполняет вход пользователя.</p>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step">
+            <span>03</span><strong>Callback</strong>
+            <p>Получает код авторизации и обменивает его на токены.</p>
+          </div>
+        </div>
+      </section>
+      <section class="section" id="administration">
+        <div class="section-heading">
+          <div>
+            <p class="section-label">ADMINISTRATION</p>
+            <h2>Администрирование SSO</h2>
+          </div>
+          <p>Управление клиентами и доступом к административной панели.</p>
+        </div>
+        <div class="cards">
+          <a class="card" href="./applications.html"
+            ><div class="card-number">01</div>
+            <h3>Управление приложениями</h3>
+            <p>
+              Регистрация OAuth/OIDC-клиентов, тип Public или Confidential,
+              Redirect URI и разрешённые scopes.
+            </p>
+            <span class="card-link">Открыть руководство →</span></a
+          >
+          <a class="card" href="./administration.html"
+            ><div class="card-number">02</div>
+            <h3>Создание администратора</h3>
+            <p>
+              Регистрация аккаунта, поиск пользователя в PostgreSQL и назначение
+              роли Admin.
+            </p>
+            <span class="card-link">Открыть руководство →</span></a
+          >
+          <a class="card" href="./providers.html"
+            ><div class="card-number">04</div>
+            <h3>Внешние провайдеры</h3>
+            <p>
+              Где хранить Client ID и Client Secret, как настроить существующего
+              провайдера и добавить свой.
+            </p>
+            <span class="card-link">Открыть руководство →</span></a
+          >
+          <a class="card" href="./integration.html"
+            ><div class="card-number">03</div>
+            <h3>Интеграция стороннего приложения</h3>
+            <p>
+              Подключение через OpenID Connect, Authorization Code Flow и PKCE.
+            </p>
+            <span class="card-link">Открыть руководство →</span></a
+          >
+        </div>
+      </section>
+      <!-- <section class="section" id="quick-links">
+        <div class="section-heading">
+          <div>
+            <p class="section-label">QUICK ACCESS</p>
+            <h2>Быстрые ссылки</h2>
+          </div>
+          <p>Основные страницы локального SSO-проекта.</p>
+        </div>
+        <div class="resource-list">
+          <a class="resource" href="/Admin/Applications"
+            ><div>
+              <strong>Админ-панель</strong>
+              <p>
+                Управление зарегистрированными OAuth/OIDC-приложениями.
+                Требуется роль Admin.
+              </p>
+            </div>
+            <span>↗</span></a
+          >
+          <a class="resource" href="/oauth-test.html"
+            ><div>
+              <strong>Локальная тестовая страница</strong>
+              <p>Проверка OAuth, PKCE и работы токенов.</p>
+            </div>
+            <span>↗</span></a
+          >
+          <a class="resource" href="/Account/Login"
+            ><div>
+              <strong>Авторизация / вход</strong>
+              <p>Страница входа в аккаунт SSO.</p>
+            </div>
+            <span>↗</span></a
+          >
+          <a class="resource" href="/Account/Logout"
+            ><div>
+              <strong>Выход из аккаунта</strong>
+              <p>Маршрут выхода. Может требовать POST-запрос.</p>
+            </div>
+            <span>↗</span></a
+          >
+          <a class="resource" href="/"
+            ><div>
+              <strong>Главная локального проекта</strong>
+              <p>Корневой адрес запущенного SSO-сервиса.</p>
+            </div>
+            <span>↗</span></a
+          >
+        </div>
+      </section> -->
+
+      <section class="section" id="tokens">
+        <div class="section-heading">
+          <div>
+            <p class="section-label">REFERENCE</p>
+            <h2>Полезные ресурсы</h2>
+          </div>
+        </div>
+        <div class="resource-list">
+          <a
+            class="resource"
+            href="https://openid.net/specs/openid-connect-discovery-1_0.html"
+            target="_blank"
+            rel="noreferrer"
+            ><div>
+              <strong>OIDC Discovery</strong>
+              <p>Конфигурация OIDC-сервера и адреса endpoints.</p>
+            </div>
+            <span>↗</span></a
+          >
+          <a
+            class="resource"
+            href="/https:/https://swagger.io/product/?utm_source=google-paid&utm_medium=ppcg&utm_campaign=G+-+API+Hub+-+EMEA+-+NB&utm_term=generate%20api%20docs&utm_content=p&gclsrc=aw.ds&gad_source=1&gad_campaignid=22683279347&gbraid=0AAAAAD_lD12zWkUJng0uIeeUPPzYpcs_p&gclid=CjwKCAjw56zWBhB0EiwAdPOQOXwqYuTYtVaJOTrjmv5AyWUm6wHP_3hbpvoW6pRuafMUylr0GKpf4hoCHOYQAvD_BwE.io/product/?utm_source=google-paid&utm_medium=ppcg&utm_campaign=G+-+API+Hub+-+EMEA+-+NB&utm_term=generate%20api%20docs&utm_content=p&gclsrc=aw.ds&gad_source=1&gad_campaignid=22683279347&gbraid=0AAAAAD_lD12zWkUJng0uIeeUPPzYpcs_p&gclid=CjwKCAjw56zWBhB0EiwAdPOQOXwqYuTYtVaJOTrjmv5AyWUm6wHP_3hbpvoW6pRuafMUylr0GKpf4hoCHOYQAvD_BwE"
+            ><div>
+              <strong>Swagger UI</strong>
+              <p>Интерактивная документация HTTP API проекта.</p>
+            </div>
+            <span>↗</span></a
+          >
+        </div>
+      </section>
+      <footer>
+        <span>With Love by Tema 2026</span
+        ><span>Документация для интеграции приложений</span>
+      </footer>
+    </main>
+  </body>
+</html>
